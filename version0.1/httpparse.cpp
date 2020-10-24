@@ -85,11 +85,10 @@ http::HttpParse::parse_requestline(char* line, PARSE_STATUS& status, HttpRequest
         std::cout<<"URL error file <"<<__FILE__<<"> at"<<__LINE__<<std::endl;
         return BAD_REQUEST;
     }
-    std::string tmp_url;
-    while (*url != '/0')
-        tmp_url += *url++;
+    std::string tmp_url(url);
     if (tmp_url == "/")
         tmp_url = "./";
+
     request.m_uri = tmp_url;
     // 状态转移至请求头
     status = http::HttpParse::PARSE_REQUEST_HEAD;
