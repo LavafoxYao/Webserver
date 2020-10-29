@@ -302,7 +302,7 @@ int setnonblocking(int fd){
     return old_opt;
 }
 
-//将fd挂到epoll树上,并使其设置为非阻塞
+//将fd挂到epoll树上,并设置监听事件为读事件与边沿模式
 void addfd(int epfd, int fd){
     struct epoll_event ev;
     ev.data.fd = fd;
