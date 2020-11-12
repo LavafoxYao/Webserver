@@ -19,7 +19,7 @@ namespace http{
        enum HTTP_STATE_CODE{UNKNOW = 0, k200OK = 200, k403Forbiden = 403, k404Notfound = 404};
        explicit HttpResponse(bool close):m_state_code(UNKNOW), m_state_msg(""),
             m_version(http::HttpRequest::VERSION_NOT_SUPPORT), m_type("text/plain"), m_content(nullptr),
-            m_close_connect(close){};
+            m_close_connect(close), m_content_len(0){};
        ~HttpResponse(){
            if (m_content != nullptr)
                delete[] m_content;

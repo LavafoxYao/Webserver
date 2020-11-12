@@ -40,6 +40,7 @@ void server::HttpServer::do_request(nsock::ClientInit & client) {
         if (res == http::HttpParse::NO_REQUEST)
             continue;
         else if (res == http::HttpParse::GET_REQUEST){
+            // 短连接
             http::HttpResponse response(true);
             get_mime(request,response);
             version(request, response);
@@ -87,9 +88,15 @@ void server::HttpServer::get_mime(http::HttpRequest & request, http::HttpRespons
 
 server::HttpServer::
 RETURN_STATE server::HttpServer::stat_filetype(http::HttpRequest& request, http::HttpResponse& response){
-    const char* file = request.m_uri.c_str();
+    // fixme
+    const char* base = "/home/wuyao/CLionProjects/version0.1/";
+    char* file = new char(strlen(request.m_uri.c_str()) + strlen(base) + 1);
+    strcpy(file, base);
+    strcat(file, request.m_uri.c_str());
+    // fixme
     struct stat st;
     int ret = stat(file, &st);
+    std::cout<<"file path is "<<file<<std::endl;
     if (ret < 0){
         response.set_state_code(http::HttpResponse::k404Notfound);
         response.set_state_msg("404 not found!");
@@ -137,7 +144,7 @@ void server::HttpServer::send_file(http::HttpResponse& response, const nsock::Cl
         ::send(client.m_cfd, buffer, strlen(buffer), 0);
         return;
     }
-    sprintf(buffer + strlen(buffer), "Content-length: %d\r\n\r\n", st.st_size);
+    sprintf(buffer + strlen(buffer), "Content-Length: %d\r\n\r\n", st.st_size);
     std::cout<<buffer<<std::endl;
     ::send(client.m_cfd, buffer, strlen(buffer), 0);
     // send file
@@ -149,58 +156,70 @@ void server::HttpServer::send_file(http::HttpResponse& response, const nsock::Cl
 
 void server::HttpServer::send_dir(http::HttpResponse& response,  nsock::ClientInit& client){
     char buffer[BUFFSIZE] = {0};
+    char dir_buffer[BUFFSIZE] = {0};
+    //int dir_len = 0;
     response.response_header(buffer);
     //std::cout<<buffer<<std::endl;
     const char *internal_error = "Internal Error";
     struct stat st;
     int ret = stat(response.get_filepath().c_str(), &st);
     if (ret < 0){
-        sprintf(buffer, "Content-length: %d\r\n\r\n", strlen(internal_error));
+        sprintf(buffer, "Content-Length: %d\r\n\r\n", strlen(internal_error));
         // 响应实体
         sprintf(buffer + strlen(buffer), "%s", internal_error);
         ::send(client.m_cfd, buffer, strlen(buffer), 0);
         return ;
     }
-    sprintf(buffer + strlen(buffer), "Content-length: %d\r\n\r\n", -1);
-    ::send(client.m_cfd, buffer, strlen(buffer), 0);
-    int cfd = client.m_cfd;
-    const char * dirname = response.get_filepath().c_str();
-    sprintf(buffer, "<html><head><title>: %s</title></head>", dirname);
-    sprintf(buffer + strlen(buffer), "<body><h1>: %s</h1><table>", dirname);
+    // fixme
+    // sprintf(buffer + strlen(buffer), "Content-length: %d\r\n\r\n", -1);
+    // ::send(client.m_cfd, buffer, strlen(buffer), 0);
 
-    char enstr[1024] = {0};
-    char path[1024] = {0};
+    int cfd = client.m_cfd;
+    std::cout<<"dirname == "<< response.get_filepath().c_str() <<std::endl;
+    const char * dirname = response.get_filepath().c_str();
+    sprintf(dir_buffer, "<html><head><title>: %s</title></head>", dirname);
+    sprintf(dir_buffer + strlen(dir_buffer), "<body><h1>: %s</h1><table>", dirname);
+    sprintf(dir_buffer + strlen(dir_buffer), "<meta charset=\"utf-8\">");
+    char path[128] = {0};
     // 目录项二级指针
     struct dirent** ptr;
     int num = scandir(dirname, &ptr, NULL, alphasort);
+    if (num < 0){
+        std::cout<<"scandir erro <"<<__FILE__<<"> at"<<__LINE__<<std::endl;
+        exit(1);
+    }
     // 遍历
-    for(int i = 0; i < num; ++i)
-    {
+    for(int i = 0; i < num; ++i){
         char* name = ptr[i]->d_name;
         // 拼接文件的完整路径
         sprintf(path, "%s/%s", dirname, name);
         printf("path = %s ===================\n", path);
         struct stat st;
         int ret = stat(path, &st);
-        // 对中文转码
-        //utils::encode_str(enstr, sizeof(enstr), name);
+        if (ret < 0){
+            std::cout<<"send_dir stat err!"<<std::endl;
+            exit(1);
+        }
         // 如果是文件
         if(S_ISREG(st.st_mode)){
-            sprintf(buffer+strlen(buffer),
+            sprintf(dir_buffer + strlen(dir_buffer),
                     "<tr><td><a href=\"%s\">%s</a></td><td>%ld</td></tr>",
-                    enstr, name, (long)st.st_size);
+                    name, name, (long)st.st_size);
         }
         // 如果是目录
         else if(S_ISDIR(st.st_mode)){
-            sprintf(buffer+strlen(buffer),
+            sprintf(dir_buffer + strlen(dir_buffer),
                     "<tr><td><a href=\"%s/\">%s/</a></td><td>%ld</td></tr>",
-                    enstr, name, (long)st.st_size);
+                    name, name, (long)st.st_size);
         }
-        send(cfd, buffer, strlen(buffer), 0);
-        memset(buffer, 0, sizeof(buffer));
+        // send(cfd, dir_buffer, strlen(dir_buffer), 0);
+        // memset(buffer, 0, sizeof(buffer));
         // 字符串拼接
     }
-    sprintf(buffer+strlen(buffer), "</table></body></html>");
-    send(cfd, buffer, strlen(buffer), 0);
+    sprintf(dir_buffer+strlen(dir_buffer), "</table></body></html>");
+    sprintf(buffer + strlen(buffer), "Content-Length: %d\r\n\r\n", strlen(dir_buffer));
+    ::send(cfd, buffer, strlen(buffer), 0);
+    ::send(cfd, dir_buffer, strlen(dir_buffer), 0);
     printf("dir message send OK!!!!\n");
+
 }

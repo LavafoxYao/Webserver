@@ -86,8 +86,11 @@ http::HttpParse::parse_requestline(char* line, PARSE_STATUS& status, HttpRequest
         return BAD_REQUEST;
     }
     std::string tmp_url(url);
+
+    /*
     if (tmp_url == "/")
         tmp_url = "./";
+    */
 
     request.m_uri = tmp_url;
     // 状态转移至请求头
