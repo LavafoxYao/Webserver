@@ -1,6 +1,7 @@
 //
-// Created by wuyao on 10/28/20.
+// Created by wuyao on 11/1/20.
 //
+
 #include "include/utils.h"
 #include "include/httpparse.h"
 #include <string.h>
@@ -86,15 +87,17 @@ http::HttpParse::parse_requestline(char* line, PARSE_STATUS& status, HttpRequest
         std::cout<<"URL error file <"<<__FILE__<<"> at"<<__LINE__<<std::endl;
         return BAD_REQUEST;
     }
-    std::string tmp_url(url);
+
+    if (!url || *url != '/')
+        return BAD_REQUEST;
 
     /*
-     * fixme
-    if (tmp_url == "/")
-        tmp_url = "./";
-    */
+   std::string tmp_url(url);
+   if (tmp_url == "/")
+       tmp_url = "./";
+   */
+    request.m_uri = std::string(url);
 
-    request.m_uri = tmp_url;
     // 状态转移至请求头
     status = http::HttpParse::PARSE_REQUEST_HEAD;
     // 只是分析完了 http的请求行 还需继续分析请求头
@@ -173,9 +176,9 @@ std::ostream& http::operator<<(std::ostream& os, const http::HttpRequest& reques
         os<<"POST ";
     os << request.m_uri;
     if (request.m_version == http::HttpRequest::HTTP_10)
-        os<<" HTTP/1.0"<<std::endl;
+        os<<"HTTP/1.0 "<<std::endl;
     else
-        os<<" HTTP/1.1"<<std::endl;
+        os<<"HTTP/1.1 "<<std::endl;
     for (auto iter = request.m_headers.begin(); iter != request.m_headers.end(); ++iter)
         os<<iter->first<<" : "<<iter->second<<std::endl;
     return os;

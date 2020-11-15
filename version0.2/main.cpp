@@ -2,8 +2,6 @@
 #include <iostream>
 
 
-
-
 int main() {
     chdir("/home/wuyao/CLionProjects/webserver/res");
     std::cout<<"/home/wuyao/CLionProjects/webserver/res"<<std::endl;

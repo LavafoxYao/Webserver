@@ -1,10 +1,9 @@
 //
-// Created by wuyao on 10/28/20.
+// Created by wuyao on 11/1/20.
 //
-
 #include "include/httpresponse.h"
 #include "include/utils.h"
-#include <string.h>
+#include <cstring>
 
 std::unordered_map<std::string, http::Mime_type> http::Mime_Map{
         {".html", "text/html"},
@@ -25,7 +24,7 @@ std::unordered_map<std::string, http::Mime_type> http::Mime_Map{
         {".gz", "application/x-gzip"},
         {".tar", "application/x-tar"},
         {".css", "text/css"},
-        {"", "text/html"},
+        {"", "text/plain"},
         {"default","text/plain"},
         {"./", "text/html"}
 };
@@ -36,12 +35,21 @@ void http::HttpResponse::response_header(char *buffer){
     else
         sprintf(buffer, "HTTP/1.1 %d %s\r\n", m_state_code, m_state_msg.c_str());
 
-    for (auto iter : m_header)
+    for (const auto& iter : m_header)
         sprintf(buffer + strlen(buffer), "%s: %s\r\n", iter.first.c_str(), iter.second.c_str());
     sprintf(buffer + strlen(buffer), "Content-Type: %s\r\n", m_type.m_type.c_str());
-    if (m_close_connect)
-        sprintf(buffer + strlen(buffer), "Connection: close\r\n", buffer);
+    if (!m_keep_alive)
+        sprintf(buffer + strlen(buffer), "Connection: close\r\n");
     else
-        sprintf(buffer + strlen(buffer), "Connection: keep-alive\r\n", buffer);
+        sprintf(buffer + strlen(buffer), "Connection: keep-alive\r\n");
 }
+
+
+void http::HttpResponse::print_header(http::HttpResponse& response) const{
+    std::cout<<"<======= print response header =======>"<<std::endl;
+    for (auto iter = m_header.begin(); iter != m_header.end(); ++iter)
+        std::cout<<iter->first<<" : "<<iter->second<<std::endl;
+    std::cout<<"<======= response header end =======>"<<std::endl;
+}
+
 
