@@ -38,7 +38,7 @@ void http::HttpResponse::response_header(char *buffer){
     for (const auto& iter : m_header)
         sprintf(buffer + strlen(buffer), "%s: %s\r\n", iter.first.c_str(), iter.second.c_str());
     sprintf(buffer + strlen(buffer), "Content-Type: %s\r\n", m_type.m_type.c_str());
-    if (!m_keep_alive)
+    if (m_keep_alive)
         sprintf(buffer + strlen(buffer), "Connection: close\r\n");
     else
         sprintf(buffer + strlen(buffer), "Connection: keep-alive\r\n");
